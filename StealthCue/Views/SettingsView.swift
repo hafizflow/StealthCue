@@ -51,6 +51,7 @@ struct SettingsView: View {
                     Text(model.settings.textOpacity, format: .percent.precision(.fractionLength(0)))
                         .monospacedDigit().frame(width: 44, alignment: .trailing)
                 }
+                Toggle("Show scroll indicator", isOn: $model.settings.showScrollIndicator)
                 LabeledContent("Background opacity") {
                     Slider(value: $model.settings.backgroundOpacity, in: 0.1...1)
                     Text(model.settings.backgroundOpacity, format: .percent.precision(.fractionLength(0)))

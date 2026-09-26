@@ -75,6 +75,7 @@ struct TeleprompterScrollView: NSViewRepresentable {
             guard let view else { return }
             self.onFinished = onFinished
             pointsPerSecond = settings.pointsPerSecond
+            view.showsIndicator = settings.showScrollIndicator
 
             let key = ContentKey(
                 text: text, fontSize: settings.fontSize, weight: settings.fontWeight,
@@ -130,11 +131,13 @@ struct TeleprompterScrollView: NSViewRepresentable {
             link.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: 60, preferred: 60)
             link.add(to: .main, forMode: .common)
             displayLink = link
+            view.isAutoScrolling = true
         }
 
         func stop() {
             displayLink?.invalidate()
             displayLink = nil
+            view?.isAutoScrolling = false
         }
 
         @objc private func tick(_ link: CADisplayLink) {
@@ -192,6 +195,8 @@ final class PrompterView: NSView {
     }
 
     private let container = CALayer()
+    private let indicatorTrack = CALayer()
+    private let indicatorThumb = CALayer()
     private var paragraphs: [Paragraph] = []
     private var live: [Int: CALayer] = [:]   // key = paragraphIndex * tileStride + tile
     private let tileStride = 10_000
@@ -213,10 +218,27 @@ final class PrompterView: NSView {
     private var topInset: CGFloat { max(bounds.height * 0.4, 20) }
 
     private(set) var offset: Double = 0 {
-        didSet { if offset != oldValue { applyOffset() } }
+        didSet { if offset != oldValue { applyOffset(); indicatorActivity() } }
     }
 
     var maxOffset: Double { max(0, Double(contentHeight + topInset * 2 - bounds.height)) }
+
+    /// Slim position indicator on the right edge (part of this window, so stealth mode hides it too).
+    /// It fades in when the text moves and out `indicatorHideDelay` after it stops; while
+    /// auto-scroll runs it stays visible.
+    var showsIndicator = true {
+        didSet { if showsIndicator != oldValue { updateIndicator() } }
+    }
+
+    var isAutoScrolling = false {
+        didSet {
+            guard isAutoScrolling != oldValue else { return }
+            if isAutoScrolling { cancelIndicatorHide(); setIndicatorOpacity(1) } else { scheduleIndicatorHide() }
+        }
+    }
+
+    private let indicatorHideDelay: TimeInterval = 1.5
+    private var indicatorHideWork: DispatchWorkItem?
 
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { false }
@@ -229,6 +251,12 @@ final class PrompterView: NSView {
         container.anchorPoint = .zero
         container.actions = ["position": NSNull(), "bounds": NSNull()]
         layer?.addSublayer(container)
+        for part in [indicatorTrack, indicatorThumb] {
+            part.actions = ["position": NSNull(), "bounds": NSNull(), "hidden": NSNull(), "backgroundColor": NSNull()]
+            part.cornerRadius = 2
+            part.opacity = 0
+            layer?.addSublayer(part)
+        }
     }
 
     @available(*, unavailable)
@@ -352,6 +380,59 @@ final class PrompterView: NSView {
             layer.removeFromSuperlayer()
             live[key] = nil
         }
+        updateIndicator()
+        CATransaction.commit()
+    }
+
+    // MARK: Indicator visibility
+
+    private func indicatorActivity() {
+        setIndicatorOpacity(1)
+        if !isAutoScrolling { scheduleIndicatorHide() }
+    }
+
+    private func scheduleIndicatorHide() {
+        cancelIndicatorHide()
+        let work = DispatchWorkItem { [weak self] in self?.setIndicatorOpacity(0) }
+        indicatorHideWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + indicatorHideDelay, execute: work)
+    }
+
+    private func cancelIndicatorHide() {
+        indicatorHideWork?.cancel()
+        indicatorHideWork = nil
+    }
+
+    private func setIndicatorOpacity(_ value: Float) {
+        guard indicatorThumb.opacity != value || indicatorThumb.animation(forKey: "opacity") != nil else { return }
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(value == 1 ? 0.12 : 0.35)
+        indicatorTrack.opacity = value
+        indicatorThumb.opacity = value
+        CATransaction.commit()
+    }
+
+    /// Track + proportional thumb, positioned by reading progress. Hidden when nothing scrolls.
+    private func updateIndicator() {
+        let travel = maxOffset
+        let hidden = !showsIndicator || travel <= 0 || bounds.height < 60
+        indicatorTrack.isHidden = hidden
+        indicatorThumb.isHidden = hidden
+        guard !hidden else { return }
+
+        let inset: CGFloat = 8, width: CGFloat = 4
+        let trackHeight = bounds.height - inset * 2
+        let x = bounds.width - width - 6
+        let thumbHeight = min(max(trackHeight * bounds.height / (CGFloat(travel) + bounds.height), 24), trackHeight)
+        let fraction = CGFloat(min(max(offset / travel, 0), 1))
+        let thumbY = inset + (trackHeight - thumbHeight) * fraction
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        indicatorTrack.frame = CGRect(x: x, y: inset, width: width, height: trackHeight)
+        indicatorThumb.frame = CGRect(x: x, y: thumbY, width: width, height: thumbHeight)
+        indicatorTrack.backgroundColor = color.withAlphaComponent(color.alphaComponent * 0.15).cgColor
+        indicatorThumb.backgroundColor = color.withAlphaComponent(color.alphaComponent * 0.6).cgColor
         CATransaction.commit()
     }
 

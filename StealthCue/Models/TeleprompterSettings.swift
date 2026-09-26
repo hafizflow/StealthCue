@@ -132,6 +132,7 @@ struct TeleprompterSettings: Codable, Equatable {
     var backgroundColor: RGBAColor = .nearBlack
     var textOpacity: Double = 1.0
     var backgroundOpacity: Double = 0.9
+    var showScrollIndicator = true
 
     // Scrolling
     var speed: Double = 2.0
@@ -143,6 +144,35 @@ struct TeleprompterSettings: Codable, Equatable {
     var lockPosition = false
     var windowWidth: Double = 760
     var windowHeight: Double = 280
+
+    init() {}
+
+    /// Tolerant decoding: a saved blob from an older version that lacks newer keys still loads,
+    /// keeping the user's tuned values and defaulting only what's missing.
+    init(from decoder: Decoder) throws {
+        self.init()
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func read<T: Decodable>(_ key: CodingKeys, _ path: WritableKeyPath<TeleprompterSettings, T>, _ s: inout Self) throws {
+            if let value = try c.decodeIfPresent(T.self, forKey: key) { s[keyPath: path] = value }
+        }
+        try read(.fontSize, \.fontSize, &self)
+        try read(.fontWeight, \.fontWeight, &self)
+        try read(.fontFamily, \.fontFamily, &self)
+        try read(.lineSpacing, \.lineSpacing, &self)
+        try read(.textAlignment, \.textAlignment, &self)
+        try read(.textColor, \.textColor, &self)
+        try read(.backgroundColor, \.backgroundColor, &self)
+        try read(.textOpacity, \.textOpacity, &self)
+        try read(.backgroundOpacity, \.backgroundOpacity, &self)
+        try read(.showScrollIndicator, \.showScrollIndicator, &self)
+        try read(.speed, \.speed, &self)
+        try read(.alwaysOnTop, \.alwaysOnTop, &self)
+        try read(.clickThrough, \.clickThrough, &self)
+        try read(.stealthMode, \.stealthMode, &self)
+        try read(.lockPosition, \.lockPosition, &self)
+        try read(.windowWidth, \.windowWidth, &self)
+        try read(.windowHeight, \.windowHeight, &self)
+    }
 
     static let fontSizeRange: ClosedRange<Double> = 16...120
     static let lineSpacingRange: ClosedRange<Double> = 0...40
