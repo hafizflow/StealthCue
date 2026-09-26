@@ -200,7 +200,6 @@ final class PrompterView: NSView {
     }
 
     private let container = CALayer()
-    private let indicatorTrack = CALayer()
     private let indicatorThumb = CALayer()
     private var paragraphs: [Paragraph] = []
     private var live: [Int: CALayer] = [:]   // key = paragraphIndex * tileStride + tile
@@ -266,7 +265,7 @@ final class PrompterView: NSView {
         container.anchorPoint = .zero
         container.actions = ["position": NSNull(), "bounds": NSNull()]
         layer?.addSublayer(container)
-        for part in [indicatorTrack, indicatorThumb] {
+        for part in [indicatorThumb] {   // thumb only, like the rest of the app
             part.actions = ["position": NSNull(), "bounds": NSNull(), "hidden": NSNull(), "backgroundColor": NSNull()]
             part.cornerRadius = 2
             part.opacity = 0
@@ -423,31 +422,27 @@ final class PrompterView: NSView {
         guard indicatorThumb.opacity != value || indicatorThumb.animation(forKey: "opacity") != nil else { return }
         CATransaction.begin()
         CATransaction.setAnimationDuration(value == 1 ? 0.12 : 0.35)
-        indicatorTrack.opacity = value
         indicatorThumb.opacity = value
         CATransaction.commit()
     }
 
-    /// Track + proportional thumb, positioned by reading progress. Hidden when nothing scrolls.
+    /// Proportional thumb (no track, like the rest of the app), positioned by reading progress. Hidden when nothing scrolls.
     private func updateIndicator() {
         let travel = maxOffset
         let hidden = !showsIndicator || travel <= 0 || bounds.height < 60
-        indicatorTrack.isHidden = hidden
         indicatorThumb.isHidden = hidden
         guard !hidden else { return }
 
         let inset: CGFloat = 8, width: CGFloat = 4
         let trackHeight = bounds.height - inset * 2
-        let x = bounds.width - width - 6
+        let x = bounds.width - width - 3
         let thumbHeight = min(max(trackHeight * bounds.height / (CGFloat(travel) + bounds.height), 24), trackHeight)
         let fraction = CGFloat(min(max(offset / travel, 0), 1))
         let thumbY = inset + (trackHeight - thumbHeight) * fraction
 
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        indicatorTrack.frame = CGRect(x: x, y: inset, width: width, height: trackHeight)
         indicatorThumb.frame = CGRect(x: x, y: thumbY, width: width, height: thumbHeight)
-        indicatorTrack.backgroundColor = color.withAlphaComponent(color.alphaComponent * 0.15).cgColor
         indicatorThumb.backgroundColor = color.withAlphaComponent(color.alphaComponent * 0.6).cgColor
         CATransaction.commit()
     }

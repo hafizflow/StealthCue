@@ -62,7 +62,7 @@ struct ScriptListView: View {
                     HStack(spacing: 10) {
                         Image(systemName: "doc.text")
                             .font(.title3)
-                            .foregroundStyle(.secondary)
+                            .selectionContrast(.secondary)
                             .frame(width: 24)
                         VStack(alignment: .leading, spacing: 2) {
                             if renamingID == script.id {
@@ -77,9 +77,11 @@ struct ScriptListView: View {
                                     }
                             } else {
                                 Text(script.title).lineLimit(1)
+                                    .selectionContrast(.primary)
                             }
                             subtitle(for: script)
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.caption)
+                                .selectionContrast(.secondary)
                         }
                     }
                     .padding(.vertical, 3)
@@ -100,6 +102,7 @@ struct ScriptListView: View {
         // One animation for every kind of change to the list: re-sorting slides rows to their new places,
         // searching fades rows in and out. Keyed on the visible order so any change triggers it.
         .animation(.smooth(duration: 0.45), value: visible.map(\.id))
+        .autoHidingScrollIndicator()
         .safeAreaInset(edge: .top, spacing: 0) { searchBar }
         .overlay {
             if scripts.scripts.isEmpty {
@@ -282,5 +285,33 @@ private struct NewScriptToolbarItem: ToolbarContent {
         } else {
             base
         }
+    }
+}
+
+
+/// Keeps a sidebar row readable on top of its selection highlight.
+///
+/// The app's accent is a light gray, and macOS paints a *focused* selected row with the accent — so the
+/// usual white text would sit on light gray. SwiftUI reports that state as `backgroundProminence ==
+/// .increased`; in it the text turns dark. In every other state (unselected, or selected but not focused,
+/// where the highlight is a dark gray) the normal light text is used.
+private struct SelectionContrast: ViewModifier {
+    enum Role { case primary, secondary }
+
+    let role: Role
+    @Environment(\.backgroundProminence) private var prominence
+
+    func body(content: Content) -> some View {
+        if prominence == .increased {
+            content.foregroundStyle(role == .primary ? Color.black : Color.black.opacity(0.62))
+        } else {
+            content.foregroundStyle(role == .primary ? HierarchicalShapeStyle.primary : HierarchicalShapeStyle.secondary)
+        }
+    }
+}
+
+private extension View {
+    func selectionContrast(_ role: SelectionContrast.Role) -> some View {
+        modifier(SelectionContrast(role: role))
     }
 }

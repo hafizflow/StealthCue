@@ -137,6 +137,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .autoHidingScrollIndicator()
         .scrollContentBackground(.hidden)   // page colour is set explicitly below
         .background(Theme.background)
     }
@@ -180,6 +181,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .autoHidingScrollIndicator()
         .scrollContentBackground(.hidden)   // page colour is set explicitly below
         .background(Theme.background)
     }
@@ -212,6 +214,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .autoHidingScrollIndicator()
         .scrollContentBackground(.hidden)   // page colour is set explicitly below
         .background(Theme.background)
     }
@@ -244,6 +247,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .autoHidingScrollIndicator()
         .scrollContentBackground(.hidden)   // page colour is set explicitly below
         .background(Theme.background)
     }
@@ -273,6 +277,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .autoHidingScrollIndicator()
         .scrollContentBackground(.hidden)   // page colour is set explicitly below
         .background(Theme.background)
     }
