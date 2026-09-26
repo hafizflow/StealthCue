@@ -71,6 +71,17 @@ final class ScriptViewModel {
         text = ""
     }
 
+    /// Renames a saved script (used by the sidebar's "Edit Title"). Only the title changes — any
+    /// unsaved text edits in the editor are left alone.
+    func rename(_ id: Script.ID, to newTitle: String) {
+        let clean = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty, let index = scripts.firstIndex(where: { $0.id == id }),
+              scripts[index].title != clean else { return }
+        scripts[index].title = clean
+        if id == selectedID { title = clean }
+        persist()
+    }
+
     func delete(_ id: Script.ID) {
         scripts.removeAll { $0.id == id }
         if selectedID == id {

@@ -84,12 +84,15 @@ struct GlassSliderRow: View {
             // A stepped `Slider(step:)` draws tick marks. Use a smooth slider and snap the value
             // ourselves, so the values are identical but the track stays clean.
             Slider(value: snapped, in: range)
+                .tint(.primary.opacity(0.55))   // neutral: keep the accent colour for the one primary action
         }
         .accessibilityElement(children: .combine)
     }
 }
 
-/// An on/off "chip": prominent glass when on, plain glass when off. Same binding as a checkbox.
+/// An on/off option styled exactly like the editor's Save / Clear / Preview buttons (glass, icon +
+/// label). "On" is a neutral gray fill rather than the accent colour, so the one primary action
+/// (Start) stays the only blue thing. Same binding as a checkbox.
 struct GlassChipToggle: View {
     let title: String
     let systemImage: String
@@ -99,12 +102,11 @@ struct GlassChipToggle: View {
     var body: some View {
         Button { isOn.toggle() } label: {
             Label(title, systemImage: systemImage)
-                .font(.callout.weight(.medium))
-                .lineLimit(1)
-                .frame(maxWidth: .infinity)
         }
         .glassButtonStyle(prominent: isOn)
-        .controlSize(.large)
+        .tint(isOn ? Color.gray : nil)
+        .controlSize(.regular)
+        .labelStyle(.titleAndIcon)
         .help(help.isEmpty ? title : help)
         .accessibilityAddTraits(.isToggle)
         .accessibilityValue(isOn ? "On" : "Off")

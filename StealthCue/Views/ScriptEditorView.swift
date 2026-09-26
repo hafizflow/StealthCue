@@ -52,18 +52,13 @@ struct ScriptEditorView: View {
                 .scrollContentBackground(.hidden)
                 .focused($editorFocused)
                 .background(EditorScrollIndicator())
-                .padding(.horizontal, 15)
                 .overlay(alignment: .topLeading) {
                     if scripts.text.isEmpty {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Label("Paste or write your script here", systemImage: "text.cursor")
-                                .font(.system(size: 16))
-                            Text("It scrolls in a floating overlay you can read while recording.")
-                                .font(.callout)
-                        }
-                        .foregroundStyle(.tertiary)
-                        .padding(.horizontal, 20).padding(.top, 8)
-                        .allowsHitTesting(false)
+                        Text("Type or paste your script…")
+                            .font(.system(size: 16))
+                            .foregroundStyle(.tertiary)
+                            .padding(.leading, 20).padding(.top, 8)
+                            .allowsHitTesting(false)
                     }
                 }
 
@@ -125,6 +120,11 @@ private struct EditorScrollIndicator: NSViewRepresentable {
 
     final class Coordinator {
         private static let hideDelay: TimeInterval = 1.5
+        /// Space between the thumb and the card's right edge.
+        private static let edgeMargin: CGFloat = 3
+        /// The text keeps its original left/right breathing room via an internal inset, so the
+        /// scroll view itself can reach the card edge.
+        private static let textSideInset: CGFloat = 15
 
         private weak var scrollView: NSScrollView?
         private let thumb = ThumbView()
@@ -160,6 +160,10 @@ private struct EditorScrollIndicator: NSViewRepresentable {
 
         func hideNativeScroller() {
             scrollView?.verticalScroller?.alphaValue = 0
+            if let textView = scrollView?.documentView as? NSTextView,
+               textView.textContainerInset.width != Self.textSideInset {
+                textView.textContainerInset = NSSize(width: Self.textSideInset, height: textView.textContainerInset.height)
+            }
         }
 
         /// Positions the thumb; flashes it only when the text actually moved.
@@ -181,7 +185,7 @@ private struct EditorScrollIndicator: NSViewRepresentable {
             let fraction = min(max(offset / travel, 0), 1)
             let fromTop = 6 + (trackHeight - thumbHeight) * fraction
             let y = scrollView.isFlipped ? fromTop : scrollView.bounds.height - fromTop - thumbHeight
-            thumb.frame = CGRect(x: scrollView.bounds.width - ThumbView.width - 6, y: y,
+            thumb.frame = CGRect(x: scrollView.bounds.width - ThumbView.width - Self.edgeMargin, y: y,
                                  width: ThumbView.width, height: thumbHeight)
 
             if moved { flash() }

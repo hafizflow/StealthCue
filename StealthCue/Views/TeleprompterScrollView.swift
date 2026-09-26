@@ -49,7 +49,8 @@ struct TeleprompterScrollView: NSViewRepresentable {
 
         private var position: Double = 0        // authoritative offset while playing
         private var lastAppliedY: Double = 0    // what we last wrote; differs => user scrolled
-        private var pointsPerSecond: Double = 0
+        private var wordsPerMinute: Double = 150
+        private var wordCount = 1
         private var appliedKey: ContentKey?
         private var lastResetToken = 0
         private var lastManualScrollLines: Double?   // nil until first update
@@ -74,7 +75,7 @@ struct TeleprompterScrollView: NSViewRepresentable {
                     resetToken: Int, manualScrollLines: Double, onFinished: @escaping () -> Void) {
             guard let view else { return }
             self.onFinished = onFinished
-            pointsPerSecond = settings.pointsPerSecond
+            wordsPerMinute = settings.wordsPerMinute
             view.showsIndicator = settings.showScrollIndicator
 
             let key = ContentKey(
@@ -89,6 +90,7 @@ struct TeleprompterScrollView: NSViewRepresentable {
                     shown, font: settings.nsFont,
                     color: key.color.nsColor.withAlphaComponent(key.color.alpha * key.opacity),
                     alignment: key.alignment.nsAlignment, lineSpacing: key.lineSpacing)   // keeps reading fraction
+                wordCount = max(shown.split(whereSeparator: \.isWhitespace).count, 1)
                 position = view.offset
                 lastAppliedY = view.offset
                 appliedKey = key
@@ -149,7 +151,10 @@ struct TeleprompterScrollView: NSViewRepresentable {
             // If the user scrolled manually (trackpad/wheel), continue from where they left it.
             if abs(view.offset - lastAppliedY) > 0.5 { position = view.offset }
 
-            position += pointsPerSecond * dt
+            // True words-per-minute: the script's height divided by its word count gives the average
+            // distance one word occupies, so it stays correct for any font size, width or language.
+            let pointsPerWord = Double(view.scriptHeight) / Double(wordCount)
+            position += (wordsPerMinute / 60) * pointsPerWord * dt
             let maxY = view.maxOffset
             if position >= maxY {
                 view.setOffset(maxY)
@@ -227,6 +232,9 @@ final class PrompterView: NSView {
     private(set) var offset: Double = 0 {
         didSet { if offset != oldValue { applyOffset(); indicatorActivity() } }
     }
+
+    /// Height of the laid-out script text (excluding the top/bottom insets).
+    var scriptHeight: CGFloat { contentHeight }
 
     var maxOffset: Double { max(0, Double(contentHeight + topInset + bottomInset - bounds.height)) }
 

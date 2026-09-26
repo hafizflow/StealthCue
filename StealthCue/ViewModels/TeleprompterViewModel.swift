@@ -55,8 +55,8 @@ final class TeleprompterViewModel {
     // MARK: Adjustments
 
     func adjustSpeed(by delta: Double) {
-        let range = TeleprompterSettings.speedRange
-        settings.speed = min(max((settings.speed + delta).rounded(toPlaces: 1), range.lowerBound), range.upperBound)
+        let range = TeleprompterSettings.wordsPerMinuteRange
+        settings.wordsPerMinute = min(max((settings.wordsPerMinute + delta).rounded(), range.lowerBound), range.upperBound)
     }
 
     func adjustFontSize(by delta: Double) {
@@ -70,12 +70,5 @@ final class TeleprompterViewModel {
         if let data = try? JSONEncoder().encode(settings) {
             defaults.set(data, forKey: Self.defaultsKey)
         }
-    }
-}
-
-private extension Double {
-    func rounded(toPlaces places: Int) -> Double {
-        let factor = pow(10, Double(places))
-        return (self * factor).rounded() / factor
     }
 }

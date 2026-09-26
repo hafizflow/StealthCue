@@ -135,7 +135,8 @@ struct TeleprompterSettings: Codable, Equatable {
     var showScrollIndicator = true
 
     // Scrolling
-    var speed: Double = 2.0
+    /// Reading speed in words per minute (what presenters actually think in).
+    var wordsPerMinute: Double = 150
 
     // Window behaviour
     var alwaysOnTop = true
@@ -165,7 +166,7 @@ struct TeleprompterSettings: Codable, Equatable {
         try read(.textOpacity, \.textOpacity, &self)
         try read(.backgroundOpacity, \.backgroundOpacity, &self)
         try read(.showScrollIndicator, \.showScrollIndicator, &self)
-        try read(.speed, \.speed, &self)
+        try read(.wordsPerMinute, \.wordsPerMinute, &self)
         try read(.alwaysOnTop, \.alwaysOnTop, &self)
         try read(.clickThrough, \.clickThrough, &self)
         try read(.stealthMode, \.stealthMode, &self)
@@ -176,7 +177,7 @@ struct TeleprompterSettings: Codable, Equatable {
 
     static let fontSizeRange: ClosedRange<Double> = 16...120
     static let lineSpacingRange: ClosedRange<Double> = 0...40
-    static let speedRange: ClosedRange<Double> = 0.5...10
+    static let wordsPerMinuteRange: ClosedRange<Double> = 60...300
     static let windowWidthRange: ClosedRange<Double> = 320...2400
     static let windowHeightRange: ClosedRange<Double> = 120...1400
 
@@ -184,7 +185,4 @@ struct TeleprompterSettings: Codable, Equatable {
         fontFamily.font(size: fontSize, weight: fontWeight.weight)
     }
 
-    /// Scroll velocity in points/second. Scales with font size so that "speed"
-    /// means roughly the same number of *lines* per second at any font size.
-    var pointsPerSecond: Double { speed * fontSize * 0.4 }
 }

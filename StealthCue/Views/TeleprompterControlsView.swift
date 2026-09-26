@@ -3,7 +3,7 @@ import SwiftUI
 /// The floating glass control dock: everything you need while prompting, in one place.
 ///
 ///     [ Show Prompt ]                              [ Reset ] [ ▶︎ ]
-///     Font size ───●───   Speed ───●───   Opacity ───●───
+///     Font size (px) ───●───   Speed (wpm) ───●───   Opacity (%) ───●───
 ///     [ Always on top ] [ Click-through ] [ Stealth ] [ Lock position ]
 struct TeleprompterControlsView: View {
     @Environment(AppState.self) private var appState
@@ -12,34 +12,41 @@ struct TeleprompterControlsView: View {
         @Bindable var model = appState.teleprompter
 
         GlassGroup(spacing: 14) {
-            VStack(spacing: 16) {
+            VStack(spacing: 14) {
                 transportRow(model)
 
-                HStack(alignment: .top, spacing: 26) {
-                    GlassSliderRow(title: "Font size", systemImage: "textformat.size",
-                                   value: $model.settings.fontSize,
-                                   range: TeleprompterSettings.fontSizeRange, step: 1) { "\(Int($0))" }
-                    GlassSliderRow(title: "Speed", systemImage: "gauge.with.needle",
-                                   value: $model.settings.speed,
-                                   range: TeleprompterSettings.speedRange, step: 0.1) { String(format: "%.1f", $0) }
-                    GlassSliderRow(title: "Opacity", systemImage: "circle.lefthalf.filled",
-                                   value: $model.settings.backgroundOpacity,
-                                   range: 0.1...1) { "\(Int(($0 * 100).rounded()))%" }
+                Divider().opacity(0.5)
+
+                dockRow("Reading") {
+                    HStack(alignment: .top, spacing: 22) {
+                        GlassSliderRow(title: "Font size", systemImage: "textformat.size",
+                                       value: $model.settings.fontSize,
+                                       range: TeleprompterSettings.fontSizeRange, step: 1) { "\(Int($0)) px" }
+                        GlassSliderRow(title: "Speed", systemImage: "gauge.with.needle",
+                                       value: $model.settings.wordsPerMinute,
+                                       range: TeleprompterSettings.wordsPerMinuteRange, step: 5) { "\(Int($0)) wpm" }
+                        GlassSliderRow(title: "Opacity", systemImage: "circle.lefthalf.filled",
+                                       value: $model.settings.backgroundOpacity,
+                                       range: 0.1...1) { "\(Int(($0 * 100).rounded()))%" }
+                    }
                 }
 
-                HStack(spacing: 10) {
-                    GlassChipToggle(title: "Always on top", systemImage: "pin",
-                                    isOn: $model.settings.alwaysOnTop,
-                                    help: "Keep the overlay above other windows")
-                    GlassChipToggle(title: "Click-through", systemImage: "cursorarrow.click",
-                                    isOn: $model.settings.clickThrough,
-                                    help: "Let mouse clicks pass through the overlay")
-                    GlassChipToggle(title: "Stealth", systemImage: "eye.slash",
-                                    isOn: $model.settings.stealthMode,
-                                    help: "Ask macOS to exclude the overlay from screen capture")
-                    GlassChipToggle(title: "Lock position", systemImage: "lock",
-                                    isOn: $model.settings.lockPosition,
-                                    help: "Prevent the overlay from being moved")
+                dockRow("Overlay") {
+                    HStack(spacing: 8) {   // same button style and size as Save / Clear / Preview
+                        GlassChipToggle(title: "Always on top", systemImage: "pin",
+                                        isOn: $model.settings.alwaysOnTop,
+                                        help: "Keep the overlay above other windows")
+                        GlassChipToggle(title: "Click-through", systemImage: "cursorarrow.click",
+                                        isOn: $model.settings.clickThrough,
+                                        help: "Let mouse clicks pass through the overlay")
+                        GlassChipToggle(title: "Stealth", systemImage: "eye.slash",
+                                        isOn: $model.settings.stealthMode,
+                                        help: "Ask macOS to exclude the overlay from screen capture")
+                        GlassChipToggle(title: "Lock position", systemImage: "lock",
+                                        isOn: $model.settings.lockPosition,
+                                        help: "Prevent the overlay from being moved")
+                        Spacer(minLength: 0)
+                    }
                 }
 
                 // Always laid out (just invisible when stealth is off) so toggling never shifts the dock.
@@ -53,7 +60,23 @@ struct TeleprompterControlsView: View {
                     .animation(.easeInOut(duration: 0.2), value: model.settings.stealthMode)
             }
             .padding(18)
-            .glassSurface(cornerRadius: 28)
+            // A solid card (like the editor) rather than glass: the glass buttons on it then keep their
+            // own visible shape, exactly like Save / Clear / Preview. Glass on glass would merge.
+            .background(Color(nsColor: .textBackgroundColor).opacity(0.55), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.primary.opacity(0.08)))
+        }
+    }
+
+    /// A small section label on the left with its controls on the right.
+    private func dockRow<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Text(title.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.tertiary)
+                .tracking(0.6)
+                .frame(width: 58, alignment: .leading)
+                .padding(.top, 6)
+            content()
         }
     }
 
@@ -65,7 +88,7 @@ struct TeleprompterControlsView: View {
                       systemImage: model.isWindowVisible ? "rectangle.slash" : "text.viewfinder")
                     .font(.body.weight(.medium))
             }
-            .glassButtonStyle(prominent: !model.isWindowVisible)
+            .glassButtonStyle()
             .controlSize(.large)
             .help("Show or hide the floating teleprompter")
 

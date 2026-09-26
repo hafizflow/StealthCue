@@ -22,8 +22,8 @@ final class AppState {
         switch command {
         case .togglePlayback: togglePlayback()
         case .reset: teleprompter.reset()
-        case .faster: teleprompter.adjustSpeed(by: 0.5)
-        case .slower: teleprompter.adjustSpeed(by: -0.5)
+        case .faster: teleprompter.adjustSpeed(by: 10)
+        case .slower: teleprompter.adjustSpeed(by: -10)
         case .scrollUp: teleprompter.scrollManually(byLines: -1)
         case .scrollDown: teleprompter.scrollManually(byLines: 1)
         case .biggerFont: teleprompter.adjustFontSize(by: 2)
