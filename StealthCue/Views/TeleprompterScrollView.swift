@@ -215,13 +215,20 @@ final class PrompterView: NSView {
     private var alignment: NSTextAlignment = .left
     private var lineSpacing: CGFloat = 8
 
-    private var topInset: CGFloat { max(bounds.height * 0.4, 20) }
+    /// The first line starts just below the top edge (a small margin, so there's no dead space when
+    /// the overlay opens). The larger bottom inset lets the last line scroll up towards the reading
+    /// area instead of stopping at the very bottom.
+    private static func insets(forHeight height: CGFloat) -> (top: CGFloat, bottom: CGFloat) {
+        (top: min(24, height * 0.15), bottom: max(height * 0.4, 20))
+    }
+    private var topInset: CGFloat { Self.insets(forHeight: bounds.height).top }
+    private var bottomInset: CGFloat { Self.insets(forHeight: bounds.height).bottom }
 
     private(set) var offset: Double = 0 {
         didSet { if offset != oldValue { applyOffset(); indicatorActivity() } }
     }
 
-    var maxOffset: Double { max(0, Double(contentHeight + topInset * 2 - bounds.height)) }
+    var maxOffset: Double { max(0, Double(contentHeight + topInset + bottomInset - bounds.height)) }
 
     /// Slim position indicator on the right edge (part of this window, so stealth mode hides it too).
     /// It fades in when the text moves and out `indicatorHideDelay` after it stops; while
@@ -305,7 +312,8 @@ final class PrompterView: NSView {
 
     private func progressFraction() -> Double {
         // Uses the *previous* geometry, so it is valid mid-resize.
-        let previousMax = max(0, Double(contentHeight + max(laidOutSize.height * 0.4, 20) * 2 - laidOutSize.height))
+        let previousMax = max(0, Double(contentHeight + Self.insets(forHeight: laidOutSize.height).top
+                                           + Self.insets(forHeight: laidOutSize.height).bottom - laidOutSize.height))
         return previousMax > 0 ? min(max(offset / previousMax, 0), 1) : 0
     }
 
@@ -337,7 +345,7 @@ final class PrompterView: NSView {
             return paragraph
         }
         contentHeight = max(0, y - gap)
-        container.bounds = CGRect(x: 0, y: 0, width: bounds.width, height: contentHeight + topInset * 2)
+        container.bounds = CGRect(x: 0, y: 0, width: bounds.width, height: contentHeight + topInset + bottomInset)
         applyOffset()
     }
 

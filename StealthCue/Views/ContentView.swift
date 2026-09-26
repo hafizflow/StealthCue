@@ -23,8 +23,7 @@ struct ContentView: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     SettingsLink {
-                        Label("Settings", systemImage: "gearshape")
-                            .labelStyle(.titleAndIcon)
+                        Label("Settings", systemImage: "gearshape")   // icon-only in the toolbar
                     }
                     .help("Open Settings (⌘,)")
                 }
