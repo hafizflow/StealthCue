@@ -66,7 +66,7 @@ struct ScriptEditorView: View {
                 if scripts.isDirty {
                     Label("Unsaved changes", systemImage: "circle.fill")
                         .font(.caption.weight(.medium))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.white)
                         .labelStyle(DotLabelStyle())
                 }
                 if let error = scripts.lastError {
@@ -81,8 +81,7 @@ struct ScriptEditorView: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
         }
-        .background(Color(nsColor: .textBackgroundColor).opacity(0.55), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.primary.opacity(0.08)))
+        .themeCard()
     }
 }
 

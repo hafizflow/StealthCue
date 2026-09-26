@@ -39,6 +39,9 @@ struct SettingsView: View {
         }
         .animation(.easeInOut(duration: 0.15), value: tab)
         .frame(width: 560, height: 640)
+        .background(Theme.background)
+        .solidToolbar(Theme.bar)   // same colour as the home window's top bar
+        .themedWindow()   // dark appearance only; colours are the system's standard grouped-form colours
     }
 
     // MARK: Tabs
@@ -65,6 +68,8 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)   // page colour is set explicitly below
+        .background(Theme.background)
     }
 
     private func textTab(_ s: Binding<TeleprompterSettings>) -> some View {
@@ -93,6 +98,8 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)   // page colour is set explicitly below
+        .background(Theme.background)
     }
 
     private func appearanceTab(_ s: Binding<TeleprompterSettings>) -> some View {
@@ -115,6 +122,8 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)   // page colour is set explicitly below
+        .background(Theme.background)
     }
 
     private var shortcutsTab: some View {
@@ -145,6 +154,8 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)   // page colour is set explicitly below
+        .background(Theme.background)
     }
 
     private func stealthTab(_ s: Binding<TeleprompterSettings>) -> some View {
@@ -159,7 +170,7 @@ struct SettingsView: View {
             Section("Limits — please read") {
                 Label {
                     Text("It is best-effort, not a guarantee. Support depends on the macOS version and on how the recorder captures the screen (older CoreGraphics capture vs. ScreenCaptureKit).")
-                } icon: { Image(systemName: "exclamationmark.triangle").foregroundStyle(.orange) }
+                } icon: { Image(systemName: "exclamationmark.triangle").foregroundStyle(Theme.secondaryText) }
                     .font(.callout)
                 Label {
                     Text("It cannot hide the overlay from a camera pointed at your screen or a hardware capture device.")
@@ -167,11 +178,13 @@ struct SettingsView: View {
                     .font(.callout)
                 Label {
                     Text("Always run a test recording with the exact app you plan to use.")
-                } icon: { Image(systemName: "checkmark.circle").foregroundStyle(.green) }
+                } icon: { Image(systemName: "checkmark.circle").foregroundStyle(.white) }
                     .font(.callout)
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)   // page colour is set explicitly below
+        .background(Theme.background)
     }
 
     private func color(_ keyPath: WritableKeyPath<TeleprompterSettings, RGBAColor>,

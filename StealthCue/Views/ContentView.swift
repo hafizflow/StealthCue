@@ -7,9 +7,10 @@ import SwiftUI
 struct ContentView: View {
     @Environment(AppState.self) private var appState
     @State private var showPreview = false
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             ScriptListView()
                 .navigationSplitViewColumnWidth(min: 190, ideal: 230, max: 320)
         } detail: {
@@ -30,9 +31,25 @@ struct ContentView: View {
             }
         }
         .navigationTitle("StealthCue")
+        .background(Theme.background.ignoresSafeArea())
+        .themedWindow()
+        .onAppear(perform: refreshSplitLayout)
         .frame(minWidth: 860, minHeight: 660)
         .task { await appState.scripts.load() }
         .sheet(isPresented: $showPreview) { PreviewSheet() }
+    }
+
+    /// On first launch macOS 26 can lay the top bar out so it stops at the sidebar's edge, and only
+    /// corrects itself once the sidebar's state changes (which is why hiding and reopening the sidebar
+    /// "fixed" it). Do that state change ourselves, immediately and without animation, so the window
+    /// starts in the corrected layout.
+    private func refreshSplitLayout() {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { columnVisibility = .detailOnly }
+        DispatchQueue.main.async {
+            withTransaction(transaction) { columnVisibility = .all }
+        }
     }
 }
 
@@ -51,7 +68,7 @@ private struct PreviewSheet: View {
                 Spacer()
                 Button("Done") { dismiss() }
                     .keyboardShortcut(.defaultAction)
-                    .glassButtonStyle(prominent: true)
+                    .primaryGlassButton()
             }
             .padding(14)
 

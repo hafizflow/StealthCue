@@ -62,8 +62,7 @@ struct TeleprompterControlsView: View {
             .padding(18)
             // A solid card (like the editor) rather than glass: the glass buttons on it then keep their
             // own visible shape, exactly like Save / Clear / Preview. Glass on glass would merge.
-            .background(Color(nsColor: .textBackgroundColor).opacity(0.55), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.primary.opacity(0.08)))
+            .themeCard()
         }
     }
 
@@ -109,7 +108,7 @@ struct TeleprompterControlsView: View {
                     .font(.body.weight(.semibold))
                     .frame(minWidth: 72)
             }
-            .glassButtonStyle(prominent: true)
+            .primaryGlassButton()
             .controlSize(.large)
             .help(model.isPlaying ? "Pause auto-scroll (Space)" : "Start auto-scroll (Space)")
         }

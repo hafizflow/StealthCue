@@ -30,6 +30,14 @@ extension View {
             if prominent { self.buttonStyle(.borderedProminent) } else { self.buttonStyle(.bordered) }
         }
     }
+
+    /// The single primary action: a white pill with black text (the theme's accent).
+    func primaryGlassButton() -> some View {
+        self
+            .glassButtonStyle(prominent: true)
+            .tint(Theme.accent)
+            .foregroundStyle(.black)
+    }
 }
 
 /// Lets neighbouring glass shapes blend and morph together on macOS 26+.
@@ -84,7 +92,7 @@ struct GlassSliderRow: View {
             // A stepped `Slider(step:)` draws tick marks. Use a smooth slider and snap the value
             // ourselves, so the values are identical but the track stays clean.
             Slider(value: snapped, in: range)
-                .tint(.primary.opacity(0.55))   // neutral: keep the accent colour for the one primary action
+                .tint(Theme.toggleOn)   // neutral light gray fill, matching the theme's switches
         }
         .accessibilityElement(children: .combine)
     }
@@ -104,7 +112,7 @@ struct GlassChipToggle: View {
             Label(title, systemImage: systemImage)
         }
         .glassButtonStyle(prominent: isOn)
-        .tint(isOn ? Color.gray : nil)
+        .tint(isOn ? Theme.selectedFill : nil)
         .controlSize(.regular)
         .labelStyle(.titleAndIcon)
         .help(help.isEmpty ? title : help)
