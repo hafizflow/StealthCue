@@ -49,15 +49,16 @@ struct TeleprompterControlsView: View {
                     }
                 }
 
-                // Always laid out (just invisible when stealth is off) so toggling never shifts the dock.
-                Label("Stealth asks macOS to exclude the overlay from screen capture. It's recorder-dependent — test yours (see Settings ▸ Stealth).",
-                      systemImage: "info.circle")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .opacity(model.settings.stealthMode ? 1 : 0)
-                    .accessibilityHidden(!model.settings.stealthMode)
-                    .animation(.easeInOut(duration: 0.2), value: model.settings.stealthMode)
+                // Only present while Stealth is on. When it goes away the dock shrinks and the editor
+                // above grows into the space — animated by the `.animation` on the parent (ContentView).
+                if model.settings.stealthMode {
+                    Label("Stealth asks macOS to exclude the overlay from screen capture. It's recorder-dependent — test yours (see Settings ▸ Stealth).",
+                          systemImage: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .transition(.opacity.combined(with: .offset(y: 8)))
+                }
             }
             .padding(18)
             // A solid card (like the editor) rather than glass: the glass buttons on it then keep their

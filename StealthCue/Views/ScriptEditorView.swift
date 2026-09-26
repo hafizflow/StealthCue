@@ -57,7 +57,7 @@ struct ScriptEditorView: View {
                         Text("Type or paste your script…")
                             .font(.system(size: 16))
                             .foregroundStyle(.tertiary)
-                            .padding(.leading, 20).padding(.top, 8)
+                            .padding(.leading, 19).padding(.top, 0)   // measured: lines up with the caret and typed text
                             .allowsHitTesting(false)
                     }
                 }

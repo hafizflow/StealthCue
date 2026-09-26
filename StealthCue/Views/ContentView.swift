@@ -21,6 +21,9 @@ struct ContentView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
             .padding(.top, 8)
+            // Animates the dock shrinking/growing (the stealth note appearing/disappearing) and the
+            // editor filling the space it frees.
+            .animation(.smooth(duration: 0.35), value: appState.teleprompter.settings.stealthMode)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     SettingsLink {

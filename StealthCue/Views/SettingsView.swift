@@ -6,6 +6,10 @@ struct SettingsView: View {
 
     private enum Tab: Hashable { case window, text, appearance, shortcuts, stealth }
     @State private var tab: Tab = .window
+    @State private var confirmingResetAll = false
+
+    /// Factory defaults: a fresh `TeleprompterSettings()`. Every reset goes back to these.
+    private static let defaults = TeleprompterSettings()
 
     var body: some View {
         @Bindable var model = appState.teleprompter
@@ -36,12 +40,75 @@ struct SettingsView: View {
                     .tabItem { Label("Stealth", systemImage: "eye.slash") }
                     .tag(Tab.stealth)
             }
+
+            resetAllBar(model.settings == Self.defaults) { model.settings = Self.defaults }
         }
         .animation(.easeInOut(duration: 0.15), value: tab)
-        .frame(width: 560, height: 640)
+        .frame(width: 560, height: 690)
         .background(Theme.background)
         .solidToolbar(Theme.bar)   // same colour as the home window's top bar
+        .overlay(alignment: .top) { Theme.barBorder.frame(height: 1) }   // ...and the same border under it
         .themedWindow()   // dark appearance only; colours are the system's standard grouped-form colours
+    }
+
+    // MARK: Resetting
+
+    /// A labelled row whose control has a reset-to-default icon on its left (next to the current
+    /// value), shown only while the value differs from its default. Not used for on/off toggles: with
+    /// only two values there's nothing worth resetting.
+    private func labeledResettable<V: Equatable, C: View>(
+        _ title: String,
+        _ keyPath: WritableKeyPath<TeleprompterSettings, V>,
+        _ s: Binding<TeleprompterSettings>,
+        _ describe: @escaping (V) -> String,
+        @ViewBuilder control: () -> C
+    ) -> some View {
+        let defaultValue = Self.defaults[keyPath: keyPath]
+        return LabeledContent(title) {
+            HStack(spacing: 8) {
+                ResetSlot(isModified: s.wrappedValue[keyPath: keyPath] != defaultValue,
+                          help: "Reset to default (\(describe(defaultValue)))") {
+                    withAnimation(.smooth(duration: 0.25)) { s.wrappedValue[keyPath: keyPath] = defaultValue }
+                }
+                control()
+            }
+        }
+    }
+
+    private static func hex(_ color: RGBAColor) -> String {
+        String(format: "#%02X%02X%02X", Int((color.red * 255).rounded()), Int((color.green * 255).rounded()), Int((color.blue * 255).rounded()))
+    }
+
+    /// The universal reset, always at the bottom of the window (disabled when nothing has changed).
+    private func resetAllBar(_ isAllDefault: Bool, reset: @escaping () -> Void) -> some View {
+        VStack(spacing: 0) {
+            Theme.barBorder.frame(height: 1)
+            HStack {
+                Text(isAllDefault ? "All settings are at their defaults." : "Some settings differ from their defaults.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button {
+                    confirmingResetAll = true
+                } label: {
+                    Label("Reset All to Defaults", systemImage: "arrow.counterclockwise")
+                }
+                .glassButtonStyle()
+                .controlSize(.regular)
+                .disabled(isAllDefault)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+        }
+        .background(Theme.background)
+        .confirmationDialog("Reset all settings to their defaults?", isPresented: $confirmingResetAll) {
+            Button("Reset All", role: .destructive) {
+                withAnimation(.smooth(duration: 0.3)) { reset() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Font, colours, speed, window behaviour and stealth mode all go back to how they were when you first installed the app. Your scripts aren't affected.")
+        }
     }
 
     // MARK: Tabs
@@ -62,9 +129,11 @@ struct SettingsView: View {
             }
             Section("Size") {
                 GlassSliderRow(title: "Width", systemImage: "arrow.left.and.right",
-                               value: s.windowWidth, range: TeleprompterSettings.windowWidthRange, step: 10) { "\(Int($0))" }
+                               value: s.windowWidth, range: TeleprompterSettings.windowWidthRange, step: 10,
+                               defaultValue: Self.defaults.windowWidth) { "\(Int($0))" }
                 GlassSliderRow(title: "Height", systemImage: "arrow.up.and.down",
-                               value: s.windowHeight, range: TeleprompterSettings.windowHeightRange, step: 10) { "\(Int($0))" }
+                               value: s.windowHeight, range: TeleprompterSettings.windowHeightRange, step: 10,
+                               defaultValue: Self.defaults.windowHeight) { "\(Int($0))" }
             }
         }
         .formStyle(.grouped)
@@ -75,26 +144,39 @@ struct SettingsView: View {
     private func textTab(_ s: Binding<TeleprompterSettings>) -> some View {
         Form {
             Section("Font") {
-                Picker("Family", selection: s.fontFamily) {
-                    ForEach(FontFamilyOption.allCases) { Text($0.label).tag($0) }
+                labeledResettable("Family", \.fontFamily, s, { $0.label }) {
+                    Picker("Family", selection: s.fontFamily) {
+                        ForEach(FontFamilyOption.allCases) { Text($0.label).tag($0) }
+                    }
+                    .labelsHidden()
                 }
-                Picker("Weight", selection: s.fontWeight) {
-                    ForEach(FontWeightOption.allCases) { Text($0.label).tag($0) }
+                labeledResettable("Weight", \.fontWeight, s, { $0.label }) {
+                    Picker("Weight", selection: s.fontWeight) {
+                        ForEach(FontWeightOption.allCases) { Text($0.label).tag($0) }
+                    }
+                    .labelsHidden()
                 }
                 GlassSliderRow(title: "Size", systemImage: "textformat.size",
-                               value: s.fontSize, range: TeleprompterSettings.fontSizeRange, step: 1) { "\(Int($0)) px" }
+                               value: s.fontSize, range: TeleprompterSettings.fontSizeRange, step: 1,
+                               defaultValue: Self.defaults.fontSize) { "\(Int($0)) px" }
             }
             Section("Layout") {
                 GlassSliderRow(title: "Line spacing", systemImage: "arrow.up.and.down.text.horizontal",
-                               value: s.lineSpacing, range: TeleprompterSettings.lineSpacingRange, step: 1) { "\(Int($0))" }
-                Picker("Alignment", selection: s.textAlignment) {
-                    ForEach(TextAlignmentOption.allCases) { Label($0.label, systemImage: $0.symbol).tag($0) }
+                               value: s.lineSpacing, range: TeleprompterSettings.lineSpacingRange, step: 1,
+                               defaultValue: Self.defaults.lineSpacing) { "\(Int($0))" }
+                labeledResettable("Alignment", \.textAlignment, s, { $0.label }) {
+                    Picker("Alignment", selection: s.textAlignment) {
+                        ForEach(TextAlignmentOption.allCases) { Label($0.label, systemImage: $0.symbol).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
                 }
-                .pickerStyle(.segmented)
             }
             Section("Scrolling") {
                 GlassSliderRow(title: "Speed", systemImage: "gauge.with.needle",
-                               value: s.wordsPerMinute, range: TeleprompterSettings.wordsPerMinuteRange, step: 5) { "\(Int($0)) wpm" }
+                               value: s.wordsPerMinute, range: TeleprompterSettings.wordsPerMinuteRange, step: 5,
+                               defaultValue: Self.defaults.wordsPerMinute) { "\(Int($0)) wpm" }
             }
         }
         .formStyle(.grouped)
@@ -105,14 +187,22 @@ struct SettingsView: View {
     private func appearanceTab(_ s: Binding<TeleprompterSettings>) -> some View {
         Form {
             Section("Colors") {
-                ColorPicker("Text color", selection: color(\.textColor, in: s), supportsOpacity: false)
-                ColorPicker("Background color", selection: color(\.backgroundColor, in: s), supportsOpacity: false)
+                labeledResettable("Text color", \.textColor, s, Self.hex) {
+                    ColorPicker("Text color", selection: color(\.textColor, in: s), supportsOpacity: false)
+                        .labelsHidden()
+                }
+                labeledResettable("Background color", \.backgroundColor, s, Self.hex) {
+                    ColorPicker("Background color", selection: color(\.backgroundColor, in: s), supportsOpacity: false)
+                        .labelsHidden()
+                }
             }
             Section("Transparency") {
                 GlassSliderRow(title: "Text opacity", systemImage: "textformat",
-                               value: s.textOpacity, range: 0.1...1) { "\(Int(($0 * 100).rounded()))%" }
+                               value: s.textOpacity, range: 0.1...1,
+                               defaultValue: Self.defaults.textOpacity) { "\(Int(($0 * 100).rounded()))%" }
                 GlassSliderRow(title: "Background opacity", systemImage: "circle.lefthalf.filled",
-                               value: s.backgroundOpacity, range: 0.1...1) { "\(Int(($0 * 100).rounded()))%" }
+                               value: s.backgroundOpacity, range: 0.1...1,
+                               defaultValue: Self.defaults.backgroundOpacity) { "\(Int(($0 * 100).rounded()))%" }
             }
             Section("Reading aids") {
                 Toggle(isOn: s.showScrollIndicator) {

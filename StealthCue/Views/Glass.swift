@@ -63,7 +63,15 @@ struct GlassSliderRow: View {
     @Binding var value: Double
     let range: ClosedRange<Double>
     var step: Double? = nil
+    /// When set, a reset icon appears next to the value whenever it differs from this default.
+    var defaultValue: Double? = nil
     let format: (Double) -> String
+
+    /// Values snap to `step`; continuous sliders get a tolerance so "0.9" isn't "modified" by float dust.
+    private func isModified(comparedTo defaultValue: Double) -> Bool {
+        let tolerance = (step ?? (range.upperBound - range.lowerBound) / 200) / 2
+        return abs(value - defaultValue) > tolerance
+    }
 
     private var snapped: Binding<Double> {
         Binding(
@@ -85,6 +93,12 @@ struct GlassSliderRow: View {
                     .frame(width: 16)
                 Text(title).font(.callout.weight(.medium))
                 Spacer(minLength: 4)
+                if let defaultValue {
+                    ResetSlot(isModified: isModified(comparedTo: defaultValue),
+                              help: "Reset to default (\(format(defaultValue)))") {
+                        withAnimation(.smooth(duration: 0.25)) { value = defaultValue }
+                    }
+                }
                 Text(format(value))
                     .font(.callout.monospacedDigit())
                     .foregroundStyle(.secondary)
@@ -108,11 +122,16 @@ struct GlassChipToggle: View {
     var help: String = ""
 
     var body: some View {
-        Button { isOn.toggle() } label: {
+        // withAnimation animates every view that depends on this state (colour fill here, and — for
+        // Stealth — the dock/editor resizing), not just this button.
+        Button { withAnimation(.smooth(duration: 0.4)) { isOn.toggle() } } label: {
             Label(title, systemImage: systemImage)
+                .foregroundStyle(isOn ? Color.primary : Color.secondary)
         }
-        .glassButtonStyle(prominent: isOn)
-        .tint(isOn ? Theme.selectedFill : nil)
+        // One constant style (swapping between .glass and .glassProminent can't be animated and
+        // snaps); the "on" state is a fill behind the glass that fades in, plus a colour change.
+        .glassButtonStyle()
+        .background(Capsule().fill(Theme.chipOnFill).opacity(isOn ? 1 : 0))
         .controlSize(.regular)
         .labelStyle(.titleAndIcon)
         .help(help.isEmpty ? title : help)

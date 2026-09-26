@@ -13,10 +13,15 @@ enum Theme {
     static let raised = Color(hex: 0x181B1B)
     /// Selected item on a dark surface (e.g. the selected tab pill).
     static let selectedFill = Color(hex: 0x393C3C)
+    /// Fill behind an "on" overlay chip. Brighter than `selectedFill` because the glass button drawn
+    /// over it dims it (this reads as roughly #393C3C on screen).
+    static let chipOnFill = Color(hex: 0x5A5E5E)
     /// The one accent: white.
     static let accent = Color.white
     /// "On" state of switches and the filled part of sliders.
     static let toggleOn = Color(hex: 0xCDCDCF)
+    /// The 1 px line under the top bar (home window's bar has it; Settings draws the same one).
+    static let barBorder = Color(hex: 0x464746)
     /// Colour of the home window's top bar; Settings' top bar is set to exactly this.
     static let bar = Color(hex: 0x2B2C2B)
     static let secondaryText = Color(hex: 0x8E9096)
