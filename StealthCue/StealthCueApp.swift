@@ -32,23 +32,26 @@ private struct MenuBarContent: View {
     var body: some View {
         @Bindable var model = appState.teleprompter
 
-        Button("Show Editor") {
+        Button("Show Editor", systemImage: "square.and.pencil") {
             openWindow(id: "main")
             NSApp.activate(ignoringOtherApps: true)
         }
-        Button(model.isWindowVisible ? "Hide Teleprompter" : "Show Teleprompter") {
+        Button(model.isWindowVisible ? "Hide Teleprompter" : "Show Teleprompter",
+               systemImage: model.isWindowVisible ? "rectangle.slash" : "text.viewfinder") {
             appState.toggleTeleprompter()
         }
         Divider()
-        Button(model.isPlaying ? "Pause" : "Start") { appState.togglePlayback() }
-        Button("Reset") { model.reset() }
+        Button(model.isPlaying ? "Pause" : "Start", systemImage: model.isPlaying ? "pause.fill" : "play.fill") {
+            appState.togglePlayback()
+        }
+        Button("Reset", systemImage: "backward.end.fill") { model.reset() }
         Divider()
-        Toggle("Stealth Mode", isOn: $model.settings.stealthMode)
-        Toggle("Click-through", isOn: $model.settings.clickThrough)
-        SettingsLink { Text("Settings…") }
+        Toggle("Stealth Mode", systemImage: "eye.slash", isOn: $model.settings.stealthMode)
+        Toggle("Click-through", systemImage: "cursorarrow.click", isOn: $model.settings.clickThrough)
+        SettingsLink { Label("Settings…", systemImage: "gearshape") }
             .simultaneousGesture(TapGesture().onEnded { NSApp.activate(ignoringOtherApps: true) })
         Divider()
-        Button("Quit StealthCue") { NSApplication.shared.terminate(nil) }
+        Button("Quit StealthCue", systemImage: "power") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
     }
 }

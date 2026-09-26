@@ -1,6 +1,9 @@
 import SwiftUI
 
-/// Main editor window: script library, editor, and quick teleprompter controls.
+/// Main window: script library (sidebar), a calm editor, and a floating glass control dock.
+///
+/// Editing actions (Save / Clear / Preview) live in the toolbar; prompting actions
+/// (show, play, reset, sliders, modes) live in the dock — so each kind of task has one obvious home.
 struct ContentView: View {
     @Environment(AppState.self) private var appState
     @State private var showPreview = false
@@ -8,16 +11,27 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             ScriptListView()
-                .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 300)
+                .navigationSplitViewColumnWidth(min: 190, ideal: 230, max: 320)
         } detail: {
-            VStack(spacing: 0) {
+            VStack(spacing: 16) {
                 ScriptEditorView(showPreview: $showPreview)
-                Divider()
                 TeleprompterControlsView()
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+            .padding(.top, 8)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    SettingsLink {
+                        Label("Settings", systemImage: "gearshape")
+                            .labelStyle(.titleAndIcon)
+                    }
+                    .help("Open Settings (⌘,)")
+                }
             }
         }
         .navigationTitle("StealthCue")
-        .frame(minWidth: 820, minHeight: 600)
+        .frame(minWidth: 860, minHeight: 660)
         .task { await appState.scripts.load() }
         .sheet(isPresented: $showPreview) { PreviewSheet() }
     }
@@ -30,24 +44,34 @@ private struct PreviewSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
+        let settings = appState.teleprompter.settings
+
         VStack(spacing: 0) {
+            HStack {
+                Label("Preview", systemImage: "eye").font(.headline)
+                Spacer()
+                Button("Done") { dismiss() }
+                    .keyboardShortcut(.defaultAction)
+                    .glassButtonStyle(prominent: true)
+            }
+            .padding(14)
+
             TeleprompterScrollView(
                 text: appState.scripts.text,
-                settings: appState.teleprompter.settings,
+                settings: settings,
                 isPlaying: false,
                 resetToken: appState.teleprompter.resetToken,
                 manualScrollLines: 0,
                 autoScroll: false
             )
-            .background(appState.teleprompter.settings.backgroundColor.color
-                .opacity(appState.teleprompter.settings.backgroundOpacity))
-            HStack {
-                Text("Scroll to preview").font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
-            }
-            .padding(10)
+            .background(settings.backgroundColor.color.opacity(settings.backgroundOpacity))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(.horizontal, 14)
+
+            Text("Scroll to look through the script")
+                .font(.caption).foregroundStyle(.secondary)
+                .padding(10)
         }
-        .frame(width: 720, height: 420)
+        .frame(width: 740, height: 460)
     }
 }

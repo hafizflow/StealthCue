@@ -7,15 +7,24 @@ struct ScriptListView: View {
     var body: some View {
         let scripts = appState.scripts
         List(selection: Binding(get: { scripts.selectedID }, set: { scripts.select($0) })) {
-            ForEach(scripts.scripts) { script in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(script.title).lineLimit(1)
-                    Text(script.updatedAt, format: .dateTime.month().day().hour().minute())
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                .tag(script.id)
-                .contextMenu {
-                    Button("Delete…", role: .destructive) { pendingDeletion = script }
+            Section("Scripts") {
+                ForEach(scripts.scripts) { script in
+                    HStack(spacing: 10) {
+                        Image(systemName: "doc.text")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 24)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(script.title).lineLimit(1)
+                            Text(script.updatedAt, format: .dateTime.month().day().hour().minute())
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 3)
+                    .tag(script.id)
+                    .contextMenu {
+                        Button("Delete…", systemImage: "trash", role: .destructive) { pendingDeletion = script }
+                    }
                 }
             }
         }
@@ -28,6 +37,7 @@ struct ScriptListView: View {
         .toolbar {
             ToolbarItem {
                 Button { scripts.newScript() } label: { Label("New Script", systemImage: "plus") }
+                    .help("New script (⌘N)")
             }
         }
         .confirmationDialog(
