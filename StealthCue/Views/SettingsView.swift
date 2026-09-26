@@ -290,6 +290,10 @@ struct SettingsView: View {
 private struct StylePreviewCard: View {
     let settings: TeleprompterSettings
 
+    /// Font sizes the preview shows at true size.
+    private static let previewRange: ClosedRange<Double> = 16...60
+    private var previewSize: Double { min(max(settings.fontSize, Self.previewRange.lowerBound), Self.previewRange.upperBound) }
+
     var body: some View {
         let alignment: Alignment = switch settings.textAlignment {
         case .left: .leading
@@ -302,22 +306,39 @@ private struct StylePreviewCard: View {
         case .right: .trailing
         }
 
-        ZStack {
-            // A checkerboard-ish backdrop so background opacity is visible.
-            LinearGradient(colors: [.gray.opacity(0.5), .gray.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing)
-            settings.backgroundColor.color.opacity(settings.backgroundOpacity)
-            Text("The quick brown fox jumps over the lazy dog.")
-                .font(Font(settings.nsFont.withSize(min(settings.fontSize, 30))))
-                .foregroundStyle(settings.textColor.color.opacity(settings.textOpacity))
-                .multilineTextAlignment(multiline)
-                .lineSpacing(settings.lineSpacing * min(1, 30 / settings.fontSize))
-                .minimumScaleFactor(0.4)
-                .padding(.horizontal, 18)
-                .frame(maxWidth: .infinity, alignment: alignment)
+        Text("From the river to the sea, Palestine will be free")
+            // True size for 16–60 px; the card grows to fit (never below its minimum height). Above 60 px
+            // it stays at 60 px and says so, rather than shrinking the text unpredictably.
+            .font(Font(settings.nsFont.withSize(previewSize)))
+            .foregroundStyle(settings.textColor.color.opacity(settings.textOpacity))
+            .multilineTextAlignment(multiline)
+            .lineSpacing(settings.lineSpacing * (previewSize / settings.fontSize))
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: alignment)
+            .frame(minHeight: 104)   // the height the preview always had; it only grows from here
+            // Backgrounds sit *behind* the text so the card's height is set by the text, not by them.
+            .background {
+                ZStack {
+                    // A backdrop so background opacity is visible.
+                    LinearGradient(colors: [.gray.opacity(0.5), .gray.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    settings.backgroundColor.color.opacity(settings.backgroundOpacity)
+                }
+            }
+        .overlay(alignment: .bottomTrailing) {
+            if settings.fontSize > Self.previewRange.upperBound {
+                Text("Preview shows up to \(Int(Self.previewRange.upperBound)) px")
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.75))
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(.black.opacity(0.45), in: Capsule())
+                    .padding(8)
+            }
         }
-        .frame(height: 104)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(.white.opacity(0.18)))
+        .animation(.smooth(duration: 0.2), value: previewSize)
+        .animation(.smooth(duration: 0.2), value: settings.lineSpacing)
         .accessibilityLabel("Style preview")
     }
 }

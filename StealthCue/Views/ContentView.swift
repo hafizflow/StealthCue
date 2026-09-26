@@ -11,7 +11,7 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            ScriptListView()
+            ScriptListView(isSidebarVisible: columnVisibility != .detailOnly)
                 .navigationSplitViewColumnWidth(min: 190, ideal: 230, max: 320)
         } detail: {
             VStack(spacing: 16) {
@@ -55,6 +55,11 @@ struct ContentView: View {
         transaction.disablesAnimations = true
         withTransaction(transaction) { columnVisibility = .detailOnly }
         DispatchQueue.main.async {
+            withTransaction(transaction) { columnVisibility = .all }
+        }
+        // Safety net: if SwiftUI ever coalesces those two changes badly, make sure the sidebar still
+        // ends up open at launch.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             withTransaction(transaction) { columnVisibility = .all }
         }
     }

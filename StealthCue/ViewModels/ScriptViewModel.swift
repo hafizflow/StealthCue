@@ -48,7 +48,13 @@ final class ScriptViewModel {
     func load() async {
         do {
             scripts = try await storage.load().sorted { $0.updatedAt > $1.updatedAt }
-            if let first = scripts.first { open(first) }
+            // Reopen the script that was open when the app last closed: the one with the latest
+            // "last opened" time. Scripts saved before that was recorded fall back to the most
+            // recently modified one.
+            let lastOpened = scripts
+                .filter { $0.lastOpenedAt != nil }
+                .max { ($0.lastOpenedAt ?? .distantPast) < ($1.lastOpenedAt ?? .distantPast) }
+            if let script = lastOpened ?? scripts.first { open(script) }
         } catch {
             lastError = "Couldn't load scripts: \(error.localizedDescription)"
         }
@@ -116,6 +122,10 @@ final class ScriptViewModel {
         selectedID = script.id
         title = script.title
         text = script.text
+        if let index = scripts.firstIndex(where: { $0.id == script.id }) {
+            scripts[index].lastOpenedAt = .now   // powers "Last Opened" sorting
+            persist()
+        }
     }
 
     private func commitIfNeeded() {
