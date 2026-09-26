@@ -48,6 +48,17 @@ extension View {
             .overlay(shape.strokeBorder(Theme.hairline))
     }
 
+    /// Removes the top bar's own background so the window's page colour shows through it (no separate
+    /// bar colour and no bottom line). macOS 15+; earlier versions keep the system bar.
+    @ViewBuilder
+    func transparentToolbar() -> some View {
+        if #available(macOS 15.0, *) {
+            self.toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+        } else {
+            self
+        }
+    }
+
     /// Gives the window's top bar a solid colour instead of translucent glass, so it looks the same
     /// whatever is behind the window.
     @ViewBuilder

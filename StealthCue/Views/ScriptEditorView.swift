@@ -6,6 +6,7 @@ struct ScriptEditorView: View {
     @Environment(AppState.self) private var appState
     @Binding var showPreview: Bool
     @FocusState private var editorFocused: Bool
+    @State private var confirmingClear = false
 
     var body: some View {
         @Bindable var scripts = appState.scripts
@@ -19,14 +20,8 @@ struct ScriptEditorView: View {
 
                 GlassGroup(spacing: 8) {
                     HStack(spacing: 8) {
-                        Button { scripts.save() } label: {
-                            Label("Save", systemImage: "square.and.arrow.down")
-                        }
-                        .keyboardShortcut("s")
-                        .disabled(!scripts.isDirty)
-                        .help("Save this script (⌘S)")
-
-                        Button(role: .destructive) { scripts.clear() } label: {
+                        // No Save button: edits save automatically shortly after you stop typing.
+                        Button(role: .destructive) { confirmingClear = true } label: {
                             Label("Clear", systemImage: "eraser")
                         }
                         .disabled(scripts.text.isEmpty)
@@ -63,12 +58,6 @@ struct ScriptEditorView: View {
                 }
 
             HStack(spacing: 10) {
-                if scripts.isDirty {
-                    Label("Unsaved changes", systemImage: "circle.fill")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.white)
-                        .labelStyle(DotLabelStyle())
-                }
                 if let error = scripts.lastError {
                     Label(error, systemImage: "exclamationmark.triangle.fill")
                         .font(.caption).foregroundStyle(.red).lineLimit(1)
@@ -82,19 +71,14 @@ struct ScriptEditorView: View {
             .padding(.vertical, 10)
         }
         .themeCard()
-    }
-}
-
-/// A small coloured dot before the text (used for the "unsaved" status).
-private struct DotLabelStyle: LabelStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 6) {
-            configuration.icon.font(.system(size: 6))
-            configuration.title
+        .confirmationDialog("Clear this script?", isPresented: $confirmingClear) {
+            Button("Clear Script", role: .destructive) { scripts.clear() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The text will be erased. Changes save automatically, so this can't be undone.")
         }
     }
 }
-
 
 // MARK: - Auto-hiding scroll indicator for the editor
 

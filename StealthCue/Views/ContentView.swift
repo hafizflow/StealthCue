@@ -21,6 +21,9 @@ struct ContentView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
             .padding(.top, 8)
+            // The 1 px border under the top bar (the bar itself has no fill; see `transparentToolbar`).
+            // Sits one point above the content's top edge, i.e. on the bar's bottom row.
+            .overlay(alignment: .top) { Theme.barBorder.frame(height: 1).offset(y: -1) }
             // Animates the dock shrinking/growing (the stealth note appearing/disappearing) and the
             // editor filling the space it frees.
             .animation(.smooth(duration: 0.35), value: appState.teleprompter.settings.stealthMode)
@@ -35,6 +38,7 @@ struct ContentView: View {
         }
         .navigationTitle("StealthCue")
         .background(Theme.background.ignoresSafeArea())
+        .transparentToolbar()   // no separate top-bar colour: the page background shows through
         .themedWindow()
         .onAppear(perform: refreshSplitLayout)
         .frame(minWidth: 860, minHeight: 660)

@@ -233,7 +233,7 @@ struct SettingsView: View {
 
             Section("In the app") {
                 ShortcutRow("New script", keys: ["⌘", "N"])
-                ShortcutRow("Save script", keys: ["⌘", "S"])
+                ShortcutRow("Save now (edits also autosave)", keys: ["⌘", "S"])
                 ShortcutRow("Show / hide teleprompter", keys: ["⇧", "⌘", "T"])
                 ShortcutRow("Start / pause", keys: ["⌘", "↩"])
                 ShortcutRow("Reset", keys: ["⌘", "R"])

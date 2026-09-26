@@ -65,6 +65,8 @@ private struct StealthCueCommands: Commands {
         CommandGroup(replacing: .newItem) {
             Button("New Script") { appState.scripts.newScript() }
                 .keyboardShortcut("n")
+            Button("Save Now") { appState.scripts.save() }   // edits already autosave; this just forces it
+                .keyboardShortcut("s")
         }
         CommandMenu("Teleprompter") {
             Button("Show / Hide Teleprompter") { appState.toggleTeleprompter() }

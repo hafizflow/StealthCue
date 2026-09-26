@@ -22,6 +22,16 @@ actor ScriptStorageService {
         return try decoder.decode([Script].self, from: data)
     }
 
+    /// Synchronous variant for app termination, where an async task might never get to run.
+    nonisolated func saveSync(_ scripts: [Script]) throws {
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try encoder.encode(scripts).write(to: fileURL, options: .atomic)
+    }
+
     func save(_ scripts: [Script]) throws {
         try FileManager.default.createDirectory(
             at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)

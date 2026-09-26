@@ -10,11 +10,16 @@ final class ScriptViewModel {
     private(set) var lastError: String?
 
     /// Live editor buffer. The teleprompter overlay reads `text` directly.
-    var title = "My Script"
-    var text = ""
+    var title = "My Script" { didSet { if title != oldValue { scheduleAutosave() } } }
+    var text = "" { didSet { if text != oldValue { scheduleAutosave() } } }
+
+    /// Edits are saved automatically this long after you stop typing (like VS Code's
+    /// "auto save: after delay").
+    private static let autosaveDelay: Duration = .milliseconds(800)
 
     @ObservationIgnored private let storage: ScriptStorageService
     @ObservationIgnored private var saveTask: Task<Void, Never>?
+    @ObservationIgnored private var autosaveTask: Task<Void, Never>?
 
     init(storage: ScriptStorageService = ScriptStorageService()) {
         self.storage = storage
@@ -22,9 +27,15 @@ final class ScriptViewModel {
 
     var selectedScript: Script? { scripts.first { $0.id == selectedID } }
 
+    /// The title as it will be stored: trimmed, and never empty.
+    private var storedTitle: String {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Untitled Script" : trimmed
+    }
+
     /// True when the editor differs from what is stored.
     var isDirty: Bool {
-        if let selectedScript { return selectedScript.title != title || selectedScript.text != text }
+        if let selectedScript { return selectedScript.title != storedTitle || selectedScript.text != text }
         return !text.isEmpty
     }
 
@@ -63,8 +74,17 @@ final class ScriptViewModel {
         persist()
     }
 
+    /// Saves right now (⌘S). Normally unnecessary: edits autosave shortly after you stop typing.
     func save() {
-        commit()
+        autosaveTask?.cancel()
+        commitIfNeeded()
+    }
+
+    /// Called when the app is about to quit: writes any pending edit *synchronously*.
+    func flushForTermination() {
+        autosaveTask?.cancel()
+        if isDirty { applyEdits() }
+        try? storage.saveSync(scripts)
     }
 
     func clear() {
@@ -102,21 +122,33 @@ final class ScriptViewModel {
         if isDirty { commit() }
     }
 
-    /// Writes the editor buffer into the library (creating a script if none is selected) and saves.
-    private func commit() {
-        let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let finalTitle = cleanTitle.isEmpty ? "Untitled Script" : cleanTitle
+    /// Copies the editor buffer into the library (creating a script if none is selected).
+    /// The title *buffer* is left as typed, so autosaving never edits text under the cursor.
+    private func applyEdits() {
         if let index = scripts.firstIndex(where: { $0.id == selectedID }) {
-            scripts[index].title = finalTitle
+            scripts[index].title = storedTitle
             scripts[index].text = text
             scripts[index].updatedAt = .now
         } else {
-            let script = Script(title: finalTitle, text: text)
+            let script = Script(title: storedTitle, text: text)
             scripts.insert(script, at: 0)
             selectedID = script.id
         }
-        title = finalTitle
+    }
+
+    private func commit() {
+        applyEdits()
         persist()
+    }
+
+    /// Debounced: every edit restarts the timer, and the save happens once typing pauses.
+    private func scheduleAutosave() {
+        autosaveTask?.cancel()
+        autosaveTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.autosaveDelay)
+            guard !Task.isCancelled else { return }
+            self?.commitIfNeeded()
+        }
     }
 
     /// Saves are chained so an older snapshot can never overwrite a newer one.

@@ -16,6 +16,14 @@ final class AppState {
         self.teleprompter = teleprompter
         self.overlay = TeleprompterWindowController(model: teleprompter, script: scripts)
         overlay.onCommand = { [weak self] in self?.perform($0) }
+
+        // Autosave safety net: save when the app loses focus, and synchronously on quit.
+        NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak scripts] _ in
+            MainActor.assumeIsolated { scripts?.save() }
+        }
+        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak scripts] _ in
+            MainActor.assumeIsolated { scripts?.flushForTermination() }
+        }
     }
 
     func perform(_ command: TeleprompterCommand) {
